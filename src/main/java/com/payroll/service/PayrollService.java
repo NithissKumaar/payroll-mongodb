@@ -1,35 +1,18 @@
 package com.payroll.service;
 
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.payroll.config.MongoDBConnection;
 import com.payroll.model.Employee;
-import org.bson.Document;
+import com.payroll.repository.EmployeeRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+@Service
 public class PayrollService {
 
-    private MongoCollection<Document> collection;
+    @Autowired
+    private EmployeeRepository repo;
 
-    public PayrollService() {
-        MongoDatabase db = MongoDBConnection.getDatabase();
-        collection = db.getCollection("employees");
-    }
-
-    public void saveEmployee(Employee emp) {
-        Document doc = new Document("empId", emp.empId)
-                .append("name", emp.name)
-                .append("basic", emp.basic)
-                .append("hra", emp.hra)
-                .append("da", emp.da)
-                .append("gross", emp.gross)
-                .append("pf", emp.pf)
-                .append("tax", emp.tax)
-                .append("net", emp.net);
-
-        collection.insertOne(doc);
-    }
-
-    public Document getEmployee(int empId) {
-        return collection.find(new Document("empId", empId)).first();
+    public Employee save(Employee emp) {
+        emp.calculate();
+        return repo.save(emp);
     }
 }
