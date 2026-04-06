@@ -464,3 +464,144 @@ function viewPayslipFor(index) {
   setTimeout(() => showPayslip(index), 100);
 }
 
+// ─── ANALYTICS ────────────────────────────────────────────
+function renderAnalytics() {
+  if (!allEmployees.length) return;
+
+  const isDark = document.documentElement.dataset.theme === 'dark';
+  const textColor = isDark ? 'rgba(232,232,255,0.55)' : 'rgba(26,26,46,0.55)';
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const sorted  = [...allEmployees].sort((a,b) => b.net - a.net);
+  const names   = sorted.map(e => e.name);
+
+  // ── BAR CHART ──
+  const barCtx = document.getElementById('barChart').getContext('2d');
+  if (barChart) barChart.destroy();
+  barChart = new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: names,
+      datasets: [{
+        label: 'Net Salary',
+        data: sorted.map(e => e.net),
+        backgroundColor: '#6C63FF88',
+        borderColor: '#6C63FF',
+        borderWidth: 2,
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      indexAxis: 'y',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => ' ' + rupee(c.raw) } }
+      },
+      scales: {
+        x: {
+          ticks: { color: textColor, callback: v => rupee(v) },
+          grid: { color: gridColor }
+        },
+        y: { ticks: { color: textColor }, grid: { color: gridColor } }
+      }
+    }
+  });
+
+  // ── STACKED CHART ──
+  const stackCtx = document.getElementById('stackedChart').getContext('2d');
+  if (stackedChart) stackedChart.destroy();
+  stackedChart = new Chart(stackCtx, {
+    type: 'bar',
+    data: {
+      labels: names,
+      datasets: [
+        {
+          label: 'Basic',
+          data: sorted.map(e => e.basic),
+          backgroundColor: '#6C63FF99',
+          borderRadius: 0,
+        },
+        {
+          label: 'HRA',
+          data: sorted.map(e => e.hra),
+          backgroundColor: '#43E97B99',
+          borderRadius: 0,
+        },
+        {
+          label: 'DA',
+          data: sorted.map(e => e.da),
+          backgroundColor: '#38F9D799',
+          borderRadius: 0,
+        },
+        {
+          label: 'Tax',
+          data: sorted.map(e => -(e.tax || 0)),
+          backgroundColor: '#FF658499',
+          borderRadius: 0,
+        },
+        {
+          label: 'PF',
+          data: sorted.map(e => -(e.pf || 0)),
+          backgroundColor: '#F7971E99',
+          borderRadius: 0,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: textColor, boxWidth: 12, font: { family: 'DM Sans' } }
+        },
+        tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${rupee(Math.abs(c.raw))}` } }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: textColor },
+          grid: { color: gridColor }
+        },
+        y: {
+          stacked: true,
+          ticks: { color: textColor, callback: v => rupee(v) },
+          grid: { color: gridColor }
+        }
+      }
+    }
+  });
+
+  // ── HEATMAP ──
+  renderHeatmap(allEmployees);
+}
+
+function renderHeatmap(employees) {
+  const heatmap = document.getElementById('heatmap');
+  if (!employees.length) { heatmap.innerHTML = '<span style="color:var(--text-muted);font-size:.875rem">No data</span>'; return; }
+
+  const nets = employees.map(e => e.net || 0);
+  const min  = Math.min(...nets);
+  const max  = Math.max(...nets);
+  const range = max - min || 1;
+
+  heatmap.innerHTML = employees.map(e => {
+    const t = ((e.net||0) - min) / range;  // 0..1
+    // Interpolate green(low) → yellow → purple(high)
+    const r = Math.round(108 + t * (255 - 108));
+    const g = Math.round(233 - t * (233 - 99));
+    const b = Math.round(123 + t * (255 - 123));
+    const color = `rgb(${r},${g},${b})`;
+    return `<div class="heatmap-cell" style="background:${color}" data-tip="${e.name}: ${rupee(e.net)}"></div>`;
+  }).join('');
+}
+
+// ─── INIT ─────────────────────────────────────────────────
+(async function init() {
+  // Mark dashboard active
+  navigateTo('dashboard');
+  // Try to load on startup
+  await loadAllEmployees();
+  // Set payslip date
+  document.getElementById('ps-date').textContent =
+    new Date().toLocaleDateString('en-IN', { year:'numeric', month:'long', day:'numeric' });
+})();
