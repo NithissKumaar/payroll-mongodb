@@ -6,7 +6,7 @@ import com.mongodb.client.MongoDatabase;
 
 public class MongoDBConnection {
 
-    private static final String URI = "mongodb://localhost:27017";
+    private static final String URI = "mongodb://host.docker.internal:27017";
     private static final String DB_NAME = "payroll_db";
 
     public static MongoDatabase getDatabase() {
