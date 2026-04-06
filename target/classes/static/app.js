@@ -362,4 +362,105 @@ document.getElementById('employeeForm').addEventListener('submit', async e => {
     net:   s.net,
   };
 
+  // Show loading state
+  btnText.style.display = 'none';
+  spinner.style.display = 'block';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(ENDPOINTS.add, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    toast(`${name} added successfully!`, 'success');
+    document.getElementById('employeeForm').reset();
+    breakdownBox.style.display = 'none';
+    resetBreakdownChart();
+    document.getElementById('formNamePreview').textContent = 'New Employee';
+    document.getElementById('formAvatar').textContent = '?';
+    // Refresh data
+    await loadAllEmployees();
+    navigateTo('employees');
+  } catch (err) {
+    console.error('Add error:', err);
+    toast('Failed to add employee. Check backend.', 'error');
+  } finally {
+    btnText.style.display = 'inline';
+    spinner.style.display = 'none';
+    btn.disabled = false;
+  }
+});
+
+// ─── PAYSLIP ──────────────────────────────────────────────
+function renderPayslipList() {
+  const list = document.getElementById('payslip-emp-list');
+  const searchEl = document.getElementById('payslipSearch');
+
+  if (!allEmployees.length) {
+    list.innerHTML = '<div class="empty-state">No employees — go to Employees tab to load</div>';
+    return;
+  }
+
+  renderFilteredPayslipList(allEmployees);
+}
+
+function filterPayslipList() {
+  const q = document.getElementById('payslipSearch').value.toLowerCase();
+  const filtered = allEmployees.filter(e => (e.name||'').toLowerCase().includes(q));
+  renderFilteredPayslipList(filtered);
+}
+
+function renderFilteredPayslipList(employees) {
+  const list = document.getElementById('payslip-emp-list');
+  if (!employees.length) {
+    list.innerHTML = '<div class="empty-state">No match found</div>';
+    return;
+  }
+  list.innerHTML = employees.map((e, i) => `
+    <div class="ps-emp-item" onclick="showPayslip(${allEmployees.indexOf(e)})" id="ps-item-${allEmployees.indexOf(e)}">
+      <div class="ps-emp-avatar">${(e.name||'?')[0].toUpperCase()}</div>
+      <div>
+        <div class="ps-emp-name">${e.name}</div>
+        <div class="ps-emp-id">EMP #${e.empId || '—'}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/** Show payslip for employee at allEmployees[index] */
+function showPayslip(index) {
+  const emp = allEmployees[index];
+  if (!emp) return;
+
+  // Highlight active list item
+  document.querySelectorAll('.ps-emp-item').forEach(el => el.classList.remove('active'));
+  const activeItem = document.getElementById(`ps-item-${index}`);
+  if (activeItem) activeItem.classList.add('active');
+
+  // Populate payslip card
+  document.getElementById('ps-avatar').textContent = (emp.name||'?')[0].toUpperCase();
+  document.getElementById('ps-name').textContent   = emp.name || '—';
+  document.getElementById('ps-id').textContent     = `EMP ID: ${emp.empId || '—'}`;
+  document.getElementById('ps-basic').textContent  = rupee(emp.basic);
+  document.getElementById('ps-hra').textContent    = rupee(emp.hra);
+  document.getElementById('ps-da').textContent     = rupee(emp.da);
+  document.getElementById('ps-gross').textContent  = rupee(emp.gross);
+  document.getElementById('ps-tax').textContent    = rupee(emp.tax);
+  document.getElementById('ps-pf').textContent     = rupee(emp.pf);
+  const deductions = (Number(emp.tax)||0) + (Number(emp.pf)||0);
+  document.getElementById('ps-deductions').textContent = rupee(deductions);
+  document.getElementById('ps-net').textContent    = rupee(emp.net);
+  document.getElementById('ps-date').textContent   = new Date().toLocaleDateString('en-IN', { year:'numeric',month:'long',day:'numeric' });
+
+  document.getElementById('payslip-view').classList.remove('hidden');
+  document.getElementById('payslip-placeholder').classList.add('hidden');
+}
+
+/** Called from the employee table "View Slip" button */
+function viewPayslipFor(index) {
+  navigateTo('payslip');
+  setTimeout(() => showPayslip(index), 100);
+}
 
