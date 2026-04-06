@@ -1,5 +1,6 @@
+com\payroll\PayrollApplication.class
+com\payroll\repository\EmployeeRepository.class
 com\payroll\model\Employee.class
 com\payroll\service\PayrollService.class
-com\payroll\util\PayslipPrinter.class
 com\payroll\config\MongoDBConnection.class
-com\payroll\Main.class
+com\payroll\controller\PayrollController.class

@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: payroll-deployment
+  name: mongodb-deployment
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: payroll
+      app: mongodb
   template:
     metadata:
       labels:
-        app: payroll
+        app: mongodb
     spec:
       containers:
-      - name: payroll-container
-        image: nithiss17/payroll-app:latest
-        ports:
-        - containerPort: 8080
+        - name: mongodb
+          image: mongo:6
+          ports:
+            - containerPort: 27017
