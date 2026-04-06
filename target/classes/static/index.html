@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payroll System</title>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            margin-top: 50px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+        }
+        table {
+            margin: auto;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>💼 Payroll System</h2>
+
+<h3>Add Employee</h3>
+
+<input type="text" id="name" placeholder="Name">
+<input type="number" id="salary" placeholder="Salary">
+<br>
+<button onclick="addEmployee()">Add Employee</button>
+<button onclick="loadEmployees()">View Employees</button>
+
+<h3>Employee List</h3>
+<table id="table">
+    <tr>
+        <th>Name</th>
+        <th>Salary</th>
+    </tr>
+</table>
+
+<script>
+
+function addEmployee() {
+    const emp = {
+        name: document.getElementById("name").value,
+        salary: document.getElementById("salary").value
+    };
+
+    fetch("http://localhost:9090/add", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(emp)
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert("Employee Added ✅");
+    });
+}
+
+function loadEmployees() {
+    fetch("http://localhost:9090/all")
+    .then(res => res.json())
+    .then(data => {
+        let table = document.getElementById("table");
+
+        table.innerHTML = `
+        <tr>
+            <th>Name</th>
+            <th>Salary</th>
+        </tr>`;
+
+        data.forEach(emp => {
+            table.innerHTML += `
+            <tr>
+                <td>${emp.name}</td>
+                <td>${emp.salary}</td>
+            </tr>`;
+        });
+    });
+}
+
+</script>
+
+</body>
+</html>
